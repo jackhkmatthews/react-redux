@@ -1,6 +1,6 @@
 # Redux Tutorials (learncode)
 
-> notes on [this](https://www.youtube.com/playlist?list=PLoYCgNOIyGADILc3iUJzygCqC8Tt3bRXt) series of vids and [this](https://react-redux.js.org/introduction/basic-tutorial) article
+> App built following [this](https://www.youtube.com/playlist?list=PLoYCgNOIyGADILc3iUJzygCqC8Tt3bRXt) series of vids and [this](https://react-redux.js.org/introduction/basic-tutorial) article. Additional notes below.
 
 # 1. How Redux works
 
@@ -20,9 +20,10 @@
 
 - can use `Object.assign` to copy / extend an object
 - doesn't work well with deep objects though. e.g:
-
-    var b = Object.assign({}, {name: 'jac', things: [1, 2, 3]})
-    b.things = b.things.concat(4)
+```
+var b = Object.assign({}, {name: 'jac', things: [1, 2, 3]})
+b.things = b.things.concat(4)
+```
 
 # 3. Basic Redux introduction
 
@@ -44,52 +45,58 @@
 - like express, will intercept every `action` that comes through, can modify or cancel action (async comes into it here)
 - redux dev tools are middle ware. Middle ware are passed to `createStore` function:
 
-    export default createStore(
-      rootReducer,
-      window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__()
-    );
+```
+export default createStore(
+  rootReducer,
+  window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__()
+);
+```
 
 - must call `next` like express to continue chain of events
 - can also modify actions
 - can also catch errors before they hit the store:
 
-    const logger = store => next => action => {
-      console.log("action fired", action);
-      action.type = TOGGLE_TODO;
-      next(action);
-    };
-    
-    const error = store => next => action => {
-      try {
-        next(action);
-      } catch (e) {
-        console.log("error:", e);
-      }
-    };
-    
-    const middleware = applyMiddleware(logger, error);
-    
-    export default createStore(rootReducer, middleware);
+```
+const logger = store => next => action => {
+  console.log("action fired", action);
+  action.type = TOGGLE_TODO;
+  next(action);
+};
+
+const error = store => next => action => {
+  try {
+    next(action);
+  } catch (e) {
+    console.log("error:", e);
+  }
+};
+
+const middleware = applyMiddleware(logger, error);
+
+export default createStore(rootReducer, middleware);
+```
 
 # 6. Redux Async Actions
 
 - `connect` handles subscribing. Returns a react component which can wrap your container components (ones that need access to the store for state or dispatch). `connect([mapStateToProps], [mapDispatchToProps], [mergeProps], [options])`
 - use thunk middleware to allow actions to return functions which include async code / side effects.
 
-    export const addRandomTodo = () => {
-      store.dispatch({ type: FETCH_TODO_START });
-      return dispatch => {
-        axios
-          .get(`https://jsonplaceholder.typicode.com/todos/${nextTodoId}`)
-          .then(req => {
-            console.log(req.data);
-            dispatch({
-              type: FETCH_TODO_SUCCESS,
-              payload: { content: req.data.title, id: ++nextTodoId }
-            });
-          });
-      };
-    };
+```
+export const addRandomTodo = () => {
+  store.dispatch({ type: FETCH_TODO_START });
+  return dispatch => {
+    axios
+      .get(`https://jsonplaceholder.typicode.com/todos/${nextTodoId}`)
+      .then(req => {
+        console.log(req.data);
+        dispatch({
+          type: FETCH_TODO_SUCCESS,
+          payload: { content: req.data.title, id: ++nextTodoId }
+        });
+      });
+  };
+};
+```
 
 - can use middle wear to generate actions like START and SUCCESS
 
