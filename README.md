@@ -1,68 +1,102 @@
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# Redux Tutorials (learncode)
 
-## Available Scripts
+> notes on [this](https://www.youtube.com/playlist?list=PLoYCgNOIyGADILc3iUJzygCqC8Tt3bRXt) series of vids and [this](https://react-redux.js.org/introduction/basic-tutorial) article
 
-In the project directory, you can run:
+# 1. How Redux works
 
-### `npm start`
+- long to setup but pays off with complex app (use state, context and / or flux first for smaller apps)
+- one big JS object, one big store
+- never change object, only create new versions, store is immutable
 
-Runs the app in the development mode.<br>
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
 
-The page will reload if you make edits.<br>
-You will also see any lint errors in the console.
+![Screenshot_2019-04-01_at_18-dac8fe59-843f-4b03-a384-9a3f96b02685 36 27](https://user-images.githubusercontent.com/20629455/55969469-bfc81280-5c75-11e9-9ab7-762f6e7171a3.png)
 
-### `npm test`
 
-Launches the test runner in the interactive watch mode.<br>
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+# 2. Immutable JS
 
-### `npm run build`
+- when creating an object / array the variable is just a pointer:
 
-Builds the app for production to the `build` folder.<br>
-It correctly bundles React in production mode and optimizes the build for the best performance.
+![Screenshot_2019-04-01_at_18-2a825f1a-1535-42cf-a49b-e1e3fdeddca5 45 26](https://user-images.githubusercontent.com/20629455/55969458-bccd2200-5c75-11e9-8a36-8e9892a29e36.png)
 
-The build is minified and the filenames include the hashes.<br>
-Your app is ready to be deployed!
+- can use `Object.assign` to copy / extend an object
+- doesn't work well with deep objects though. e.g:
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+    var b = Object.assign({}, {name: 'jac', things: [1, 2, 3]})
+    b.things = b.things.concat(4)
 
-### `npm run eject`
+# 3. Basic Redux introduction
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+- minimum to get use Redux is a reducer and a store
+- can then subscribe to store
+- can then dispatch events to store with a type and a payload
+- completely un-opinionated about what you call things, apart from `payload`
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+# 4. Multiple Reducers
 
-Instead, it will copy all the configuration files and the transitive dependencies (Webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+- can combine reducers to make them easier to manage
+- specify which part of the state you are changing and which reducer to user e.g `user: userReducer`
+- when combining reducers set initial state in reducers function definition
+- always return a new state object from reducers
+- can have a switch case for the same action in multiple reducers
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+# 5. Middleware
 
-## Learn More
+- like express, will intercept every `action` that comes through, can modify or cancel action (async comes into it here)
+- redux dev tools are middle ware. Middle ware are passed to `createStore` function:
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+    export default createStore(
+      rootReducer,
+      window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__()
+    );
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+- must call `next` like express to continue chain of events
+- can also modify actions
+- can also catch errors before they hit the store:
 
-### Code Splitting
+    const logger = store => next => action => {
+      console.log("action fired", action);
+      action.type = TOGGLE_TODO;
+      next(action);
+    };
+    
+    const error = store => next => action => {
+      try {
+        next(action);
+      } catch (e) {
+        console.log("error:", e);
+      }
+    };
+    
+    const middleware = applyMiddleware(logger, error);
+    
+    export default createStore(rootReducer, middleware);
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/code-splitting
+# 6. Redux Async Actions
 
-### Analyzing the Bundle Size
+- `connect` handles subscribing. Returns a react component which can wrap your container components (ones that need access to the store for state or dispatch). `connect([mapStateToProps], [mapDispatchToProps], [mergeProps], [options])`
+- use thunk middleware to allow actions to return functions which include async code / side effects.
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size
+    export const addRandomTodo = () => {
+      store.dispatch({ type: FETCH_TODO_START });
+      return dispatch => {
+        axios
+          .get(`https://jsonplaceholder.typicode.com/todos/${nextTodoId}`)
+          .then(req => {
+            console.log(req.data);
+            dispatch({
+              type: FETCH_TODO_SUCCESS,
+              payload: { content: req.data.title, id: ++nextTodoId }
+            });
+          });
+      };
+    };
 
-### Making a Progressive Web App
+- can use middle wear to generate actions like START and SUCCESS
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app
+# 7. Connecting React and Redux
 
-### Advanced Configuration
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/advanced-configuration
-
-### Deployment
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/deployment
-
-### `npm run build` fails to minify
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify
+- need to use react-redux `Provider` component and render inside that.
+- need to give `store` to Provider component as prop
+- then wrap components which need access to the store with `connect` also available as a decorator `@connect`
+- connect can take `connect([mapStateToProps], [mapDispatchToProps], [mergeProps], [options])`
+-
